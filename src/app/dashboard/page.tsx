@@ -8,6 +8,7 @@ import { formatErrorMessages } from "@/src/utils/utils";
 import CardsList from "./components/CardsList";
 import CreateCardForm from "./components/CreateCardForm";
 import Section from "./components/Section";
+import { ApiError } from "next/dist/server/api-utils";
 
 export default function DashboardPage() {
   const [formData, setFormData] = useState({
@@ -41,14 +42,21 @@ export default function DashboardPage() {
       return;
     }
     try {
-      const newCard: CreditCard = await createCard({
+      const data = await createCard({
         userName: formData.userName,
         cardNumber: formData.cardNumber,
         cardLimit: parseInt(formData.cardLimit),
       });
-      setFormData({ userName: "", cardNumber: "", cardLimit: "" });
-      setErrorMessages([]);
-      setCards((prevCards) => [...(prevCards || []), newCard]);
+
+      console.log("data", data);
+
+      if (Array.isArray(data)) {
+        setErrorMessages(data);
+      } else {
+        setFormData({ userName: "", cardNumber: "", cardLimit: "" });
+        setErrorMessages([]);
+        setCards((prevCards) => [...(prevCards || []), data as CreditCard]);
+      }
     } catch (error) {
       setErrorMessages([error instanceof Error ? error.message : "An unknown error occurred"]);
     }
@@ -59,8 +67,8 @@ export default function DashboardPage() {
       try {
         const result = await getAllCards();
         setCards(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "An unknown error occurred");
       } finally {
         setLoading(false);
       }
